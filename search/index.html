@@ -6,7 +6,7 @@
     <title>제주어 사전</title>
     <style>
         body {
-            
+            font-family: Arial, sans-serif;
             line-height: 1.8;
             margin: 0;
             padding: 0;
@@ -26,6 +26,61 @@
             border-bottom: 2px solid #bdc3c7;
             display: inline-block;
             padding-bottom: 10px;
+        }
+
+        #search-container {
+            margin-top: 20px;
+            position: relative;
+            width: 80%;
+            max-width: 400px;
+            display: flex;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+        }
+
+        #search-button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-left: none;
+            border-radius: 0 5px 5px 0;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+
+        #search-button:hover {
+            background-color: #0056b3;
+        }
+
+        #dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .dropdown-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f1f1f1;
         }
 
         #content {
@@ -102,11 +157,16 @@
         #result {
             text-align: left;
         }
-
     </style>
 </head>
 <body>
     <h1>제주어 사전</h1>
+    <div id="search-container">
+        <input type="text" id="search-input" placeholder="검색어를 입력하세요">
+        <button id="search-button">검색</button>
+        <div id="dropdown"></div>
+    </div>
+
     <div id="content">
         <div id="result"></div>
     </div>
@@ -212,6 +272,70 @@
 
         window.addEventListener("hashchange", checkHash);
         window.addEventListener("load", checkHash);
+
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const dropdown = document.getElementById('dropdown');
+
+        function normalizeTitle(title) {
+            return title.replace(/\d/g, '');
+        }
+
+        function navigateToSearch(query) {
+            if (query.trim()) {
+                window.location.href = `#${encodeURIComponent(query)}`;
+            }
+        }
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.trim();
+            dropdown.innerHTML = '';
+
+            if (query.length > 0) {
+                const normalizedQuery = normalizeTitle(query);
+
+                const matches = dictionary
+                    .map(entry => normalizeTitle(entry["표제어"]))
+                    .filter((word, index, self) => word.startsWith(normalizedQuery) && self.indexOf(word) === index)
+                    .slice(0, 20);
+
+                if (matches.length > 0) {
+                    matches.forEach(match => {
+                        const item = document.createElement('div');
+                        item.textContent = match;
+                        item.className = 'dropdown-item';
+                        item.addEventListener('click', () => {
+                            searchInput.value = match;
+                            dropdown.innerHTML = '';
+                            dropdown.style.display = 'none';
+                            navigateToSearch(match);
+                        });
+                        dropdown.appendChild(item);
+                    });
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                navigateToSearch(searchInput.value);
+            }
+        });
+
+        searchButton.addEventListener('click', () => {
+            navigateToSearch(searchInput.value);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('search-container').contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
